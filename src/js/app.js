@@ -1,7 +1,9 @@
 import layoutCountry from '../templates/card.hbs';
 import autofillMenu from '../templates/menu.hbs';
+import { alert, notice, info, success, error } from '@pnotify/core';
 import debounce from 'lodash.debounce';
-
+import API from './fetchCountries.js';
+import '@pnotify/core/dist/BrightTheme.css'
 
 const menu = document.querySelector('#menu');
 const listMenu = document.querySelector('#autofill');
@@ -9,36 +11,32 @@ const valueInput = document.querySelector('#search');
 
 
 function onValueInput(evn) {
-    console.log(evn.target.value);
+    menu.innerHTML = '';
+    listMenu.innerHTML = '';
 
-    fetchCountry(evn.target.value)
+    if (evn.target.value !== '') {
+    API.fetchCountries(evn.target.value)
         .then(renderCountry)
-        .catch(erorr => { console.log(erorr); });
- }
-    
-
-function fetchCountry(countryName) {
-   return fetch(`https://restcountries.eu/rest/v2/name/${countryName}`)
-    .then(response => {
-        return response.json();
-    })    
+        .catch(error => console.log(error));
+    } 
 }
 
 function renderCountry(country) {
     if ((country.length >= 2) && (country.length <= 10)) {
-            country.forEach(element => {
-                const markup = autofillMenu(element);
-                console.log(markup);
-                listMenu.insertAdjacentHTML('beforeend', markup);
-            });
-        } else if (country.length === 1) {
-            const markup = country.map(layoutCountry).join('');
-            menu.insertAdjacentHTML('beforeend', markup);
-        } else {
-            menu.classList.add('menu')
-            menu.innerHTML = "Hайдено слишком много совпадений. Пожалуйста, введите более конкретный запрос!";
-        }
+        country.forEach(element => {
+            const markup = autofillMenu(element);
+            listMenu.insertAdjacentHTML('beforeend', markup);
+        });
+    } else if (country.length === 1) {
+        const markup = country.map(layoutCountry).join('');
+        menu.insertAdjacentHTML('beforeend', markup); 
+    } else if (country.length > 10) {
+        info({
+            title: 'Urgent information',
+            text: 'Too many matches found. please enter a more specific query!'
+        });
+    }
+    
 }
 
-
-valueInput.addEventListener('input', debounce(onValueInput, 5000));
+valueInput.addEventListener('input', debounce(onValueInput, 500));
